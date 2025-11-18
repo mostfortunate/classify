@@ -1,0 +1,1 @@
+Goal: Classify each email into one of the preset categories, along with a confidence score.
