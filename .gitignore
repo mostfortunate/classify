@@ -2,3 +2,4 @@ node_modules
 dist
 .env
 response.json
+classified_response.json
