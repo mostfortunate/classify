@@ -1,7 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
-import { PublicClientApplication } from "@azure/msal-node";
+import { ConfidentialClientApplication } from "@azure/msal-node";
 import { Client } from "@microsoft/microsoft-graph-client";
 import fs from "fs";
 import path from "path";
@@ -15,38 +15,59 @@ app.use(express.json());
 
 const CLIENT_ID = process.env.CLIENT_ID;
 const TENANT_ID = process.env.TENANT_ID;
-const SCOPES = ["Mail.Read"];
+const CLIENT_SECRET = process.env.CLIENT_SECRET;
 
-if (!CLIENT_ID || !TENANT_ID)
-  throw new Error("Missing required env vars: CLIENT_ID, TENANT_ID");
+if (!CLIENT_ID || !TENANT_ID || !CLIENT_SECRET)
+  throw new Error(
+    "Missing required env vars: CLIENT_ID, TENANT_ID, CLIENT_SECRET"
+  );
 
-// MSAL config for device code flow
-let accessToken: string | null = null;
-const msalConfig = {
+const cca = new ConfidentialClientApplication({
   auth: {
     clientId: CLIENT_ID,
     authority: `https://login.microsoftonline.com/${TENANT_ID}`,
+    clientSecret: CLIENT_SECRET,
   },
+});
+
+interface Message {
+  id: string;
+  sender: { emailAddress: { name: string; address: string } };
+  subject: string;
+  receivedDateTime: string;
+  bodyPreview: string;
+}
+
+interface ClassifiedMessage {
+  id: string;
+  category: string;
+  confidence: number;
+}
+
+// !!! currently mocks values !!!
+const classifyMessage = ({
+  message,
+}: {
+  message: Message;
+}): ClassifiedMessage => {
+  const categories = ["Invoice", "Supplier", "Personal"];
+  return {
+    id: message.id,
+    category: categories[Math.floor(Math.random() * categories.length)]!,
+    confidence: +Math.random().toFixed(2),
+  };
 };
 
-const pca = new PublicClientApplication(msalConfig);
 app.get("/login", async (req, res) => {
   try {
-    const deviceCodeRequest = {
-      deviceCodeCallback: (response: any) => {
-        console.log(response.message); // send this to the frontend, to have the user sign in.
-      },
-      scopes: SCOPES,
-    };
-
-    const response = await pca.acquireTokenByDeviceCode(deviceCodeRequest);
-
+    const response = await cca.acquireTokenByClientCredential({
+      scopes: ["https://graph.microsoft.com/.default"],
+    });
     if (!response || !response.accessToken) {
       return res.status(500).send("Failed to acquire access token");
     }
 
-    accessToken = response.accessToken;
-
+    const accessToken = response.accessToken;
     res.send("Logged in! You can now call /emails"); // redirect the user to /emails.
   } catch (error) {
     console.error(error);
@@ -55,27 +76,42 @@ app.get("/login", async (req, res) => {
 });
 
 app.get("/emails", async (req, res) => {
-  if (!accessToken) {
-    return res.status(401).send("User not logged in. Visit /login first.");
-  }
-
-  const client = Client.init({
-    authProvider: (done) => done(null, accessToken),
-  });
-
   try {
+    const result = await cca.acquireTokenByClientCredential({
+      scopes: ["https://graph.microsoft.com/.default"],
+    });
+
+    if (!result || !result.accessToken) {
+      return res.status(500).send("Failed to acquire access token");
+    }
+
+    const client = Client.init({
+      authProvider: (done) => done(null, result.accessToken),
+    });
+
     const messages = await client
-      .api("/me/messages")
-      .select("sender,subject,receivedDateTime,bodyPreview")
-      .top(25) // in the future we'll delta query to get only new emails
+      .api("/users/sales@anytimeoutfits.com/messages")
+      .select("id,sender,subject,receivedDateTime,bodyPreview")
+      .filter("isDraft eq false")
+      .top(25)
       .get();
 
-    const filePath = path.join(__dirname, "..", "response.json");
-    fs.writeFileSync(filePath, JSON.stringify(messages.value, null, 2));
+    const classifiedMessages = messages.value.map((message: Message) =>
+      classifyMessage({ message })
+    );
 
-    res.status(200).send("Emails retrieved and saved to response.json");
-  } catch (error) {
-    console.error(error);
+    fs.writeFileSync(
+      path.join(__dirname, "..", "response.json"),
+      JSON.stringify(messages.value, null, 2)
+    );
+    fs.writeFileSync(
+      path.join(__dirname, "..", "classified_response.json"),
+      JSON.stringify(classifiedMessages, null, 2)
+    );
+
+    res.status(200).json(classifiedMessages);
+  } catch (err) {
+    console.error(err);
     res.status(500).send("Failed to retrieve emails");
   }
 });
