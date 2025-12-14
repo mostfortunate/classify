@@ -67,17 +67,7 @@ const Message = ({
       onClick={() => setExpanded((v) => !v)}
     >
       <div className="flex items-center justify-between">
-        <div className="text-left">
-          <h3 className="text-base font-semibold">{subject}</h3>
-          <p className="text-sm text-muted-foreground">
-            {new Date(receivedDateTime).toLocaleDateString()}
-          </p>
-        </div>
-
         <div className="flex flex-row items-center gap-4">
-          <Button variant="outline" className="rounded-full h-8 w-8" size="icon" aria-label="Go to message">
-            <ArrowUpRight />
-          </Button>
           <div
             className="relative"
             style={{ width: radius * 2, height: radius * 2 }}
@@ -112,6 +102,24 @@ const Message = ({
               {Math.round(progress)}
             </div>
           </div>
+
+          <div className="flex flex-col text-left truncate">
+            <h3 className="text-base font-semibold">{subject}</h3>
+            <p className="text-sm text-muted-foreground">
+              {new Date(receivedDateTime).toLocaleDateString()}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-row items-center gap-4">
+          <Button
+            variant="outline"
+            className="rounded-full h-8 w-8"
+            size="icon"
+            aria-label="Go to message"
+          >
+            <ArrowUpRight />
+          </Button>
         </div>
       </div>
 
