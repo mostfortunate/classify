@@ -42,6 +42,11 @@ interface ClassifiedMessage {
   id: string;
   category: string;
   confidence: number;
+  receivedDateTime: string;
+  subject: string;
+  bodyPreview: string;
+  senderName: string;
+  senderAddress: string;
 }
 
 // !!! currently mocks values !!!
@@ -50,12 +55,23 @@ const classifyMessage = ({
 }: {
   message: Message;
 }): ClassifiedMessage => {
-  const categories = ["Invoice", "Supplier", "Personal"];
+  const categories = ["Invoice", "Inquiry", "Supplier", "Personal"];
+  
   return {
     id: message.id,
+    receivedDateTime: message.receivedDateTime,
+    subject: message.subject,
+    bodyPreview: message.bodyPreview,
+    senderName: message.sender.emailAddress.name,
+    senderAddress: message.sender.emailAddress.address,
     category: categories[Math.floor(Math.random() * categories.length)]!,
     confidence: +Math.random().toFixed(2),
   };
+  // return {
+  //   id: message.id,
+  //   category: categories[Math.floor(Math.random() * categories.length)]!,
+  //   confidence: +Math.random().toFixed(2),
+  // };
 };
 
 app.get("/", async (req, res) => {
