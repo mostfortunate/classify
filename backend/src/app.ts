@@ -58,23 +58,6 @@ const classifyMessage = ({
   };
 };
 
-app.get("/login", async (req, res) => {
-  try {
-    const response = await cca.acquireTokenByClientCredential({
-      scopes: ["https://graph.microsoft.com/.default"],
-    });
-    if (!response || !response.accessToken) {
-      return res.status(500).send("Failed to acquire access token");
-    }
-
-    const accessToken = response.accessToken;
-    res.send("Logged in! You can now call /emails"); // redirect the user to /emails.
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Login failed");
-  }
-});
-
 app.get("/emails", async (req, res) => {
   try {
     const result = await cca.acquireTokenByClientCredential({
