@@ -10,25 +10,13 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 dotenv.config();
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+  })
+);
+
 app.use(express.json());
-
-const CLIENT_ID = process.env.CLIENT_ID;
-const TENANT_ID = process.env.TENANT_ID;
-const CLIENT_SECRET = process.env.CLIENT_SECRET;
-
-if (!CLIENT_ID || !TENANT_ID || !CLIENT_SECRET)
-  throw new Error(
-    "Missing required env vars: CLIENT_ID, TENANT_ID, CLIENT_SECRET"
-  );
-
-const cca = new ConfidentialClientApplication({
-  auth: {
-    clientId: CLIENT_ID,
-    authority: `https://login.microsoftonline.com/${TENANT_ID}`,
-    clientSecret: CLIENT_SECRET,
-  },
-});
 
 interface Message {
   id: string;
@@ -49,6 +37,23 @@ interface ClassifiedMessage {
   senderAddress: string;
 }
 
+const CLIENT_ID = process.env.CLIENT_ID;
+const TENANT_ID = process.env.TENANT_ID;
+const CLIENT_SECRET = process.env.CLIENT_SECRET;
+
+if (!CLIENT_ID || !TENANT_ID || !CLIENT_SECRET)
+  throw new Error(
+    "Missing required env vars: CLIENT_ID, TENANT_ID, CLIENT_SECRET"
+  );
+
+const cca = new ConfidentialClientApplication({
+  auth: {
+    clientId: CLIENT_ID,
+    authority: `https://login.microsoftonline.com/${TENANT_ID}`,
+    clientSecret: CLIENT_SECRET,
+  },
+});
+
 // !!! currently mocks values !!!
 const classifyMessage = ({
   message,
@@ -56,7 +61,7 @@ const classifyMessage = ({
   message: Message;
 }): ClassifiedMessage => {
   const categories = ["Invoice", "Inquiry", "Supplier", "Personal"];
-  
+
   return {
     id: message.id,
     receivedDateTime: message.receivedDateTime,
@@ -66,10 +71,10 @@ const classifyMessage = ({
     senderAddress: message.sender.emailAddress.address,
     category: categories[Math.floor(Math.random() * categories.length)]!,
     confidence: +Math.random().toFixed(2),
-  };  
+  };
 };
 
-app.get("/", async (req, res) => {
+app.get("/messages", async (req, res) => {
   try {
     const result = await cca.acquireTokenByClientCredential({
       scopes: ["https://graph.microsoft.com/.default"],
