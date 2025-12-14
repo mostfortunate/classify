@@ -85,6 +85,7 @@ const ProgressCircle = ({ score }: ProgressCircleProps) => {
 };
 
 interface MessageProps {
+  sender: { name: string; address: string };
   subject: string;
   preview: string;
   receivedDateTime: string;
@@ -92,6 +93,7 @@ interface MessageProps {
 }
 
 const Message = ({
+  sender,
   subject,
   preview,
   receivedDateTime,
@@ -102,30 +104,35 @@ const Message = ({
   return (
     <motion.div
       layout
-      className="p-4 border border-gray-300 rounded-lg flex flex-col cursor-pointer"
       onClick={() => setExpanded((v) => !v)}
+      className="
+    p-4 border rounded-lg flex flex-col cursor-pointer
+    transition-colors hover:bg-muted/40
+  "
     >
-      <div className="flex items-center justify-between">
-        <div className="flex flex-row items-center gap-4">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 min-w-0">
           <ProgressCircle score={score} />
-          <div className="flex flex-col text-left truncate">
-            <h3 className="text-base font-semibold">{subject}</h3>
-            <p className="text-sm text-muted-foreground">
+          <div className="flex flex-col min-w-0">
+            <h3 className="text-left text-sm font-medium line-clamp-1">
+              {subject}
+            </h3>
+            <p className="text-left text-xs text-muted-foreground line-clamp-1">
+              {sender.name} &lt;{sender.address}&gt; •{" "}
               {new Date(receivedDateTime).toLocaleDateString()}
             </p>
           </div>
         </div>
 
-        <div className="flex flex-row items-center gap-4">
-          <Button
-            variant="outline"
-            className="rounded-full h-8 w-8"
-            size="icon"
-            aria-label="Go to message"
-          >
-            <ArrowUpRight />
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          className="rounded-full"
+          aria-label="Open in Outlook"
+          size="icon"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <ArrowUpRight className="h-4 w-4" />
+        </Button>
       </div>
 
       <AnimatePresence initial={false}>
@@ -134,10 +141,9 @@ const Message = ({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25, ease: "easeInOut" }}
             className="overflow-hidden"
           >
-            <div className="pt-3 text-left text-sm text-gray-800">
+            <div className="pt-3 text-left mt-2 border-t text-sm text-muted-foreground">
               {preview}
             </div>
           </motion.div>
@@ -155,6 +161,7 @@ const MessageList = ({ messages }: MessageListProps) => (
   <div className="p-4 space-y-3">
     {messages.map((message) => (
       <Message
+        sender={{ name: message.senderName, address: message.senderAddress }}
         key={message.id}
         preview={message.bodyPreview}
         subject={message.subject}
@@ -169,15 +176,19 @@ interface CategoryHeaderProps {
   title: string;
   count: number;
   onClick: () => void;
+  containsUnread?: boolean;
 }
 
-const CategoryHeader = ({ title, count, onClick }: CategoryHeaderProps) => (
+const CategoryHeader = ({ title, count, onClick, containsUnread }: CategoryHeaderProps) => (
   <button
     onClick={onClick}
     className="w-full flex justify-between items-center p-4 text-left"
   >
     <h2 className="text-xl font-bold">{title}</h2>
-    <span className="text-sm text-gray-500">{count}</span>
+    <div className="flex flex-row">
+      <span className="text-sm text-gray-500">{count}</span>
+      {containsUnread && <div className="h-1 w-1 bg-red-500 rounded-full"/>}
+    </div>
   </button>
 );
 
@@ -218,6 +229,7 @@ const CategorySection = ({
 }: CategorySectionProps) => (
   <div className="border border-gray-200 rounded-2xl">
     <CategoryHeader
+      containsUnread={true}
       title={category}
       count={messages.length}
       onClick={() => onToggle(category)}
