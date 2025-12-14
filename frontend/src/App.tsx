@@ -2,6 +2,9 @@ import "./App.css";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
+import { Button } from "@/components/ui/button";
+import { ArrowUpRight } from "lucide-react";
+
 interface ClassifiedMessage {
   id: string;
   category: string;
@@ -27,17 +30,109 @@ function useMessages() {
 
 interface MessageProps {
   subject: string;
+  preview: string;
   receivedDateTime: string;
+  score: number;
 }
 
-const Message = ({ subject, receivedDateTime }: MessageProps) => (
-  <div className="p-4 border border-gray-300 rounded-lg">
-    <h3 className="text-base text-left font-semibold">{subject}</h3>
-    <p className="text-sm text-left text-muted-foreground">
-      {new Date(receivedDateTime).toLocaleDateString()}
-    </p>
-  </div>
-);
+const Message = ({
+  subject,
+  preview,
+  receivedDateTime,
+  score,
+}: MessageProps) => {
+  const [expanded, setExpanded] = useState(false);
+
+  const radius = 20;
+  const stroke = 4;
+  const normalizedRadius = radius - stroke * 0.5;
+  const circumference = normalizedRadius * 2 * Math.PI;
+
+  const progress = Math.min(Math.max(score, 0), 100);
+  const strokeDashoffset = circumference - (progress / 100) * circumference;
+
+  const colorClass =
+    progress >= 75
+      ? "text-green-500"
+      : progress >= 50
+      ? "text-yellow-500"
+      : progress >= 25
+      ? "text-orange-500"
+      : "text-red-500";
+
+  return (
+    <motion.div
+      layout
+      className="p-4 border border-gray-300 rounded-lg flex flex-col cursor-pointer"
+      onClick={() => setExpanded((v) => !v)}
+    >
+      <div className="flex items-center justify-between">
+        <div className="text-left">
+          <h3 className="text-base font-semibold">{subject}</h3>
+          <p className="text-sm text-muted-foreground">
+            {new Date(receivedDateTime).toLocaleDateString()}
+          </p>
+        </div>
+
+        <div className="flex flex-row items-center gap-4">
+          <Button variant="outline" className="rounded-full h-8 w-8" size="icon" aria-label="Go to message">
+            <ArrowUpRight />
+          </Button>
+          <div
+            className="relative"
+            style={{ width: radius * 2, height: radius * 2 }}
+          >
+            <svg height={radius * 2} width={radius * 2} className="-rotate-90">
+              <circle
+                stroke="currentColor"
+                className="text-gray-200"
+                fill="transparent"
+                strokeWidth={stroke}
+                r={normalizedRadius}
+                cx={radius}
+                cy={radius}
+              />
+              <motion.circle
+                stroke="currentColor"
+                className={colorClass}
+                fill="transparent"
+                strokeWidth={stroke}
+                strokeLinecap="round"
+                strokeDasharray={`${circumference} ${circumference}`}
+                initial={{ strokeDashoffset: circumference }}
+                animate={{ strokeDashoffset }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+                r={normalizedRadius}
+                cx={radius}
+                cy={radius}
+              />
+            </svg>
+
+            <div className="absolute inset-0 flex items-center justify-center text-md font-bold">
+              {Math.round(progress)}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <AnimatePresence initial={false}>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
+            className="overflow-hidden"
+          >
+            <div className="pt-3 text-left text-sm text-gray-800">
+              {preview}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+};
 
 interface MessageListProps {
   messages: ClassifiedMessage[];
@@ -48,8 +143,10 @@ const MessageList = ({ messages }: MessageListProps) => (
     {messages.map((message) => (
       <Message
         key={message.id}
+        preview={message.bodyPreview}
         subject={message.subject}
         receivedDateTime={message.receivedDateTime}
+        score={message.confidence * 100}
       />
     ))}
   </div>
