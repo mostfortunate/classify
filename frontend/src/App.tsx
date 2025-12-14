@@ -28,21 +28,11 @@ function useMessages() {
   return messages;
 }
 
-interface MessageProps {
-  subject: string;
-  preview: string;
-  receivedDateTime: string;
+interface ProgressCircleProps {
   score: number;
 }
 
-const Message = ({
-  subject,
-  preview,
-  receivedDateTime,
-  score,
-}: MessageProps) => {
-  const [expanded, setExpanded] = useState(false);
-
+const ProgressCircle = ({ score }: ProgressCircleProps) => {
   const radius = 20;
   const stroke = 4;
   const normalizedRadius = radius - stroke * 0.5;
@@ -59,6 +49,55 @@ const Message = ({
       : progress >= 25
       ? "text-orange-500"
       : "text-red-500";
+  return (
+    <div className="relative" style={{ width: radius * 2, height: radius * 2 }}>
+      <svg height={radius * 2} width={radius * 2} className="-rotate-90">
+        <circle
+          stroke="currentColor"
+          className="text-gray-200"
+          fill="transparent"
+          strokeWidth={stroke}
+          r={normalizedRadius}
+          cx={radius}
+          cy={radius}
+        />
+        <motion.circle
+          stroke="currentColor"
+          className={colorClass}
+          fill="transparent"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={`${circumference} ${circumference}`}
+          initial={{ strokeDashoffset: circumference }}
+          animate={{ strokeDashoffset }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          r={normalizedRadius}
+          cx={radius}
+          cy={radius}
+        />
+      </svg>
+
+      <div className="absolute inset-0 flex items-center justify-center text-md font-bold">
+        {Math.round(progress)}
+      </div>
+    </div>
+  );
+};
+
+interface MessageProps {
+  subject: string;
+  preview: string;
+  receivedDateTime: string;
+  score: number;
+}
+
+const Message = ({
+  subject,
+  preview,
+  receivedDateTime,
+  score,
+}: MessageProps) => {
+  const [expanded, setExpanded] = useState(false);
 
   return (
     <motion.div
@@ -68,41 +107,7 @@ const Message = ({
     >
       <div className="flex items-center justify-between">
         <div className="flex flex-row items-center gap-4">
-          <div
-            className="relative"
-            style={{ width: radius * 2, height: radius * 2 }}
-          >
-            <svg height={radius * 2} width={radius * 2} className="-rotate-90">
-              <circle
-                stroke="currentColor"
-                className="text-gray-200"
-                fill="transparent"
-                strokeWidth={stroke}
-                r={normalizedRadius}
-                cx={radius}
-                cy={radius}
-              />
-              <motion.circle
-                stroke="currentColor"
-                className={colorClass}
-                fill="transparent"
-                strokeWidth={stroke}
-                strokeLinecap="round"
-                strokeDasharray={`${circumference} ${circumference}`}
-                initial={{ strokeDashoffset: circumference }}
-                animate={{ strokeDashoffset }}
-                transition={{ duration: 0.6, ease: "easeOut" }}
-                r={normalizedRadius}
-                cx={radius}
-                cy={radius}
-              />
-            </svg>
-
-            <div className="absolute inset-0 flex items-center justify-center text-md font-bold">
-              {Math.round(progress)}
-            </div>
-          </div>
-
+          <ProgressCircle score={score} />
           <div className="flex flex-col text-left truncate">
             <h3 className="text-base font-semibold">{subject}</h3>
             <p className="text-sm text-muted-foreground">
