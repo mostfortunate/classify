@@ -58,7 +58,7 @@ const classifyMessage = ({
   };
 };
 
-app.get("/emails", async (req, res) => {
+app.get("/", async (req, res) => {
   try {
     const result = await cca.acquireTokenByClientCredential({
       scopes: ["https://graph.microsoft.com/.default"],
