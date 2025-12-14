@@ -66,12 +66,7 @@ const classifyMessage = ({
     senderAddress: message.sender.emailAddress.address,
     category: categories[Math.floor(Math.random() * categories.length)]!,
     confidence: +Math.random().toFixed(2),
-  };
-  // return {
-  //   id: message.id,
-  //   category: categories[Math.floor(Math.random() * categories.length)]!,
-  //   confidence: +Math.random().toFixed(2),
-  // };
+  };  
 };
 
 app.get("/", async (req, res) => {
