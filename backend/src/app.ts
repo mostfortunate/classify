@@ -54,13 +54,28 @@ const cca = new ConfidentialClientApplication({
   },
 });
 
-// !!! currently mocks values !!!
 const classifyMessage = ({
   message,
 }: {
   message: Message;
 }): ClassifiedMessage => {
   const categories = ["Invoice", "Inquiry", "Supplier", "Personal"];
+  const text = `${message.subject} ${message.bodyPreview}`.toLowerCase();
+
+  let bestCategory = "Other";
+  let bestCount = 0;
+  let totalCount = 0;
+
+  for (const category of categories) {
+    const count = (text.match(new RegExp(category, "gi")) || []).length;
+    totalCount += count;
+    if (count > bestCount) {
+      bestCount = count;
+      bestCategory = category;
+    }
+  }
+
+  const confidence = totalCount > 0 ? +(bestCount / totalCount).toFixed(2) : 0;
 
   return {
     id: message.id,
@@ -69,8 +84,8 @@ const classifyMessage = ({
     bodyPreview: message.bodyPreview,
     senderName: message.sender.emailAddress.name,
     senderAddress: message.sender.emailAddress.address,
-    category: categories[Math.floor(Math.random() * categories.length)]!,
-    confidence: +Math.random().toFixed(2),
+    category: bestCategory,
+    confidence,
   };
 };
 
